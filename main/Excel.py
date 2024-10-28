@@ -6,12 +6,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
+from PIL import Image as PILImage  # Import Pillow Image
 import os
-import time  # Import time module for sleep
+import time
 
 # Function to take a screenshot of a website after logging in
 def take_screenshot(url, output_path):
-    # Set up the Selenium WebDriver (Edge)
     options = webdriver.EdgeOptions()
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-extensions")
@@ -19,20 +19,15 @@ def take_screenshot(url, output_path):
     options.add_argument("--user-data-dir=C:/temp/edge_profile")  # Use a temporary profile
     driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
 
-    # Open the website
     driver.get(url)
 
     try:
-        # Wait for a specific element on the page that indicates login was successful
-        # Adjust the locator as needed to match a relevant element
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))  # Wait for the body tag to ensure the page is loaded
         )
 
-        # Optional: Wait an additional few seconds for full page load (can be adjusted)
         time.sleep(5)
 
-        # Take a screenshot
         driver.save_screenshot(output_path)
         print(f"Screenshot saved to {output_path}")
 
@@ -40,52 +35,47 @@ def take_screenshot(url, output_path):
         print(f"Error occurred: {e}")
 
     finally:
-        # Close the browser
         driver.quit()
+
+# Function to crop the image
+def crop_image(input_path, output_path, crop_box):
+    with PILImage.open(input_path) as img:
+        cropped_img = img.crop(crop_box)  # Crop the image
+        cropped_img.save(output_path)  # Save the cropped image
+        print(f"Cropped image saved to {output_path}")
 
 # Function to create a copy of a sheet and add screenshots
 def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots, cell_positions):
-    # Load the existing workbook
     wb = openpyxl.load_workbook(file_path)
-
-    # Get the sheet to copy
     original_sheet = wb[sheet_name]
-
-    # Create a copy of the sheet
     new_sheet = wb.copy_worksheet(original_sheet)
     new_sheet.title = new_sheet_name
 
-    # Insert screenshots into specified cells
     for screenshot, cell_position in zip(screenshots, cell_positions):
-        # Check if the screenshot file exists before trying to add it
         if os.path.exists(screenshot):
             img = Image(screenshot)  # Load the screenshot
             img.anchor = cell_position  # Set the cell position for the image
 
-            # Get the cell width and height in pixels
-            column_letter = cell_position[0]  # Get the column letter (e.g., 'A', 'B', etc.)
-            cell_width = new_sheet.column_dimensions[column_letter].width  # Get column width in characters
-            cell_height = new_sheet.row_dimensions[int(cell_position[1:])].height  # Get row height in points
+            column_letter = cell_position[0]
+            cell_width = new_sheet.column_dimensions[column_letter].width
+            cell_height = new_sheet.row_dimensions[int(cell_position[1:])].height
 
-            # Convert width and height to pixels
             if cell_width is None:
-                cell_width = 8.43  # Default width if None (approx. 64 pixels)
+                cell_width = 8.43
             if cell_height is None:
-                cell_height = 15.00  # Default height if None (approx. 20 pixels)
+                cell_height = 15.00
 
-            # Convert column width (character width) to pixels
-            cell_width_pixels = cell_width * 7  # Approx. 7 pixels per character
-            cell_height_pixels = cell_height * 0.75  # Approx. 0.75 pixels per point
+            cell_width_pixels = cell_width * 7
+            cell_height_pixels = cell_height * 0.75
 
-            # Set the image size to fit the cell size
             img.width = cell_width_pixels
             img.height = cell_height_pixels
 
-            new_sheet.add_image(img)  # Add the image to the new sheet
+            new_sheet.add_image(img)
+
         else:
             print(f"Screenshot file not found: {screenshot}")
 
-    # Save the workbook with the new sheet and images
     wb.save(file_path)
 
 # Define your parameters
@@ -106,7 +96,13 @@ screenshot_paths = []
 for i, url in enumerate(urls):
     screenshot_path = f"C:\\Git_Projects\\Excel_Automation\\screenshot_{i + 1}.png"  # Define a unique filename for each screenshot
     take_screenshot(url, screenshot_path)  # Take screenshot
-    screenshot_paths.append(screenshot_path)  # Add path to the list
+
+    # Define cropping box (left, upper, right, lower)
+    # Define cropping box (left, upper, right, lower)
+    crop_box = (380, 237, 1863, 900)  # Adjust these values based on your image dimensions and desired crop area
+    cropped_screenshot_path = f"C:\\Git_Projects\\Excel_Automation\\cropped_screenshot_{i + 1}.png"
+    crop_image(screenshot_path, cropped_screenshot_path, crop_box)  # Crop the image
+    screenshot_paths.append(cropped_screenshot_path)  # Add cropped path to the list
 
 cell_positions = ['B4', 'C4', 'B6', 'C6']  # Corresponding cell positions for the screenshots
 
