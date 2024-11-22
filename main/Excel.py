@@ -9,6 +9,8 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from PIL import Image as PILImage
 import os
 import time
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
 # Function to take a screenshot of a website after logging in
 def take_screenshot(url, output_path):
@@ -51,10 +53,10 @@ def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots,
 
     # Define custom column widths and row heights for specific cells
     dimensions = {
-        'B4': {'width': 74.75, 'height': 148},
+        'B4': {'width': 96.75, 'height': 148},
         'C4': {'width': 96.75, 'height': 148},
-        'B6': {'width': 74.75, 'height': 168},
-        'C6': {'width': 96.75, 'height': 168}
+        'B6': {'width': 96.75, 'height': 148},
+        'C6': {'width': 96.75, 'height': 148}
     }
 
     for screenshot, cell_position in zip(screenshots, cell_positions):
@@ -69,8 +71,8 @@ def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots,
 
             # Load and resize the screenshot
             img = Image(screenshot)
-            img.width = new_sheet.column_dimensions[col_letter].width * 7.5
-            img.height = new_sheet.row_dimensions[row_number].height * 0.75
+            img.width = new_sheet.column_dimensions[col_letter].width * 7.9804
+            img.height = new_sheet.row_dimensions[row_number].height * 1.3188
             img.anchor = cell_position
 
             new_sheet.add_image(img)
@@ -79,29 +81,62 @@ def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots,
 
     wb.save(file_path)
 
-# Define parameters
-file_path = r"C:\Users\srijanani.LTPL\Downloads\LX 70 Project Health Card Template.xltx"
-sheet_name = 'Dashboard'
-new_sheet_name = 'Dashboard Copy'
+# GUI Functions
+def browse_file():
+    global file_path
+    file_path = filedialog.askopenfilename(
+        filetypes=[("Excel Files", "*.xlsx")],
+        title="Select Excel File"
+    )
+    if file_path:
+        file_label.config(text=f"Selected File: {os.path.basename(file_path)}")
 
-urls = [
-    'https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/status/customview/171358000000082007/donut',
-    'https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/owner/customview/171358000000082007/bar',
-    'https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/basicreports/status/customview/171358000001439105/donut',
-    'https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/advancedreports/dynamicreport/owners/status/customview/171358000001439095/stacked'
-]
+def run_process():
+    if not file_path:
+        messagebox.showerror("Error", "No file selected. Please select an Excel file.")
+        return
 
-screenshot_paths = []
-for i, url in enumerate(urls):
-    screenshot_path = f"C:\\Git_Projects\\Excel_Automation\\screenshot_{i + 1}.png"
-    take_screenshot(url, screenshot_path)
+    sheet_name = 'Dashboard'
+    new_sheet_name = 'Dashboard Copy'
 
-    crop_box = (380, 237, 1863, 900)
-    cropped_screenshot_path = f"C:\\Git_Projects\\Excel_Automation\\cropped_screenshot_{i + 1}.png"
-    crop_image(screenshot_path, cropped_screenshot_path, crop_box)
-    screenshot_paths.append(cropped_screenshot_path)
+    urls = [
+        'https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/status/customview/171358000000082007/donut',
+        'https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/owner/customview/171358000000082007/bar',
+        'https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/basicreports/status/customview/171358000001439105/donut',
+        'https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/advancedreports/dynamicreport/owners/status/customview/171358000001439095/stacked'
+    ]
 
-cell_positions = ['B4', 'C4', 'B6', 'C6']
+    screenshot_paths = []
+    for i, url in enumerate(urls):
+        screenshot_path = f"C:\\Git_Projects\\Excel_Automation\\screenshot_{i + 1}.png"
+        take_screenshot(url, screenshot_path)
 
-# Call the function
-add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshot_paths, cell_positions)
+        crop_box = (380, 237, 1863, 900)
+        cropped_screenshot_path = f"C:\\Git_Projects\\Excel_Automation\\cropped_screenshot_{i + 1}.png"
+        crop_image(screenshot_path, cropped_screenshot_path, crop_box)
+        screenshot_paths.append(cropped_screenshot_path)
+
+    cell_positions = ['B4', 'C4', 'B6', 'C6']
+
+    add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshot_paths, cell_positions)
+    messagebox.showinfo("Success", "Process completed and screenshots added to the Excel file.")
+
+# Initialize GUI
+root = tk.Tk()
+root.title("Excel Automation Tool")
+root.geometry("400x200")
+
+file_path = None
+
+# GUI Elements
+file_label = tk.Label(root, text="No file selected", wraplength=300)
+file_label.pack(pady=10)
+
+browse_button = tk.Button(root, text="Browse", command=browse_file)
+browse_button.pack(pady=5)
+
+run_button = tk.Button(root, text="Run", command=run_process)
+run_button.pack(pady=5)
+
+# Run the GUI loop
+root.mainloop()
