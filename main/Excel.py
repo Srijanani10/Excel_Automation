@@ -51,7 +51,6 @@ def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots,
     new_sheet = wb.copy_worksheet(original_sheet)
     new_sheet.title = new_sheet_name
 
-    # Define custom column widths and row heights for specific cells
     dimensions = {
         'B4': {'width': 96.75, 'height': 148},
         'C4': {'width': 96.75, 'height': 148},
@@ -61,7 +60,6 @@ def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots,
 
     for screenshot, cell_position in zip(screenshots, cell_positions):
         if os.path.exists(screenshot):
-            # Adjust column width and row height
             col_letter = cell_position[0]
             row_number = int(cell_position[1:])
 
@@ -69,7 +67,6 @@ def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots,
                 new_sheet.column_dimensions[col_letter].width = dimensions[cell_position]['width']
                 new_sheet.row_dimensions[row_number].height = dimensions[cell_position]['height']
 
-            # Load and resize the screenshot
             img = Image(screenshot)
             img.width = new_sheet.column_dimensions[col_letter].width * 7.9804
             img.height = new_sheet.row_dimensions[row_number].height * 1.3188
@@ -82,20 +79,27 @@ def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots,
     wb.save(file_path)
 
 # GUI Functions
-def browse_file():
-    global file_path
-    file_path = filedialog.askopenfilename(
-        filetypes=[("Excel Files", "*.xlsx")],
-        title="Select Excel File"
-    )
-    if file_path:
-        file_label.config(text=f"Selected File: {os.path.basename(file_path)}")
+def browse_folder():
+    global folder_path
+    folder_path = filedialog.askdirectory(title="Select Folder")
+    if folder_path:
+        folder_label.config(text=f"Selected Folder: {folder_path}")
 
 def run_process():
-    if not file_path:
-        messagebox.showerror("Error", "No file selected. Please select an Excel file.")
+    if not folder_path:
+        messagebox.showerror("Error", "No folder selected. Please select a folder.")
         return
 
+    # Find Excel file in the selected folder
+    excel_files = [f for f in os.listdir(folder_path) if f.endswith('.xlsx')]
+    if not excel_files:
+        messagebox.showerror("Error", "No Excel file found in the selected folder.")
+        return
+    elif len(excel_files) > 1:
+        messagebox.showerror("Error", "Multiple Excel files found. Please ensure only one Excel file exists in the folder.")
+        return
+
+    file_path = os.path.join(folder_path, excel_files[0])
     sheet_name = 'Dashboard'
     new_sheet_name = 'Dashboard Copy'
 
@@ -108,11 +112,11 @@ def run_process():
 
     screenshot_paths = []
     for i, url in enumerate(urls):
-        screenshot_path = f"C:\\Git_Projects\\Excel_Automation\\screenshot_{i + 1}.png"
+        screenshot_path = os.path.join(folder_path, f"screenshot_{i + 1}.png")
         take_screenshot(url, screenshot_path)
 
         crop_box = (380, 237, 1863, 900)
-        cropped_screenshot_path = f"C:\\Git_Projects\\Excel_Automation\\cropped_screenshot_{i + 1}.png"
+        cropped_screenshot_path = os.path.join(folder_path, f"cropped_screenshot_{i + 1}.png")
         crop_image(screenshot_path, cropped_screenshot_path, crop_box)
         screenshot_paths.append(cropped_screenshot_path)
 
@@ -126,13 +130,13 @@ root = tk.Tk()
 root.title("Excel Automation Tool")
 root.geometry("400x200")
 
-file_path = None
+folder_path = None
 
 # GUI Elements
-file_label = tk.Label(root, text="No file selected", wraplength=300)
-file_label.pack(pady=10)
+folder_label = tk.Label(root, text="No folder selected", wraplength=300)
+folder_label.pack(pady=10)
 
-browse_button = tk.Button(root, text="Browse", command=browse_file)
+browse_button = tk.Button(root, text="Browse Folder", command=browse_folder)
 browse_button.pack(pady=5)
 
 run_button = tk.Button(root, text="Run", command=run_process)
