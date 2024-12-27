@@ -43,6 +43,39 @@ def delete_title_and_links():
     else:
         messagebox.showerror("Error", "Selected title not found.")
 
+# Edit a title and its links in the JSON file
+def edit_title_and_links():
+    selected_title = title_combobox.get()
+    if not selected_title:
+        messagebox.showerror("Error", "No title selected. Please select a title.")
+        return
+
+    # Populate the entry and text widget with the selected title and links
+    title_entry.delete(0, tk.END)
+    title_entry.insert(0, selected_title)
+    links_text.delete("1.0", tk.END)
+    links_text.insert("1.0", "\n".join(titles_and_links[selected_title]))
+
+    def save_edited_title_and_links():
+        new_title = title_entry.get()
+        new_links = links_text.get("1.0", tk.END).strip().splitlines()
+
+        if not new_title or not new_links:
+            messagebox.showerror("Error", "Please provide a new title and at least one link.")
+            return
+
+        if selected_title in titles_and_links:
+            del titles_and_links[selected_title]
+            titles_and_links[new_title] = new_links
+            save_titles_and_links(titles_and_links)
+            title_combobox['values'] = list(titles_and_links.keys())
+            messagebox.showinfo("Success", "Title and links edited successfully.")
+        else:
+            messagebox.showerror("Error", "Selected title not found.")
+
+    # Change the add button to save button for editing
+    add_button.config(text="Save Changes", command=save_edited_title_and_links)
+
 # View titles and links
 def view_titles_and_links():
     selected_title = title_combobox.get()
@@ -213,6 +246,9 @@ add_button.pack(pady=5)
 
 delete_button = tk.Button(root, text="Delete Title and Links", command=delete_title_and_links)
 delete_button.pack(pady=5)
+
+edit_button = tk.Button(root, text="Edit Title and Links", command=edit_title_and_links)
+edit_button.pack(pady=5)
 
 view_button = tk.Button(root, text="View Title and Links", command=view_titles_and_links)
 view_button.pack(pady=5)
