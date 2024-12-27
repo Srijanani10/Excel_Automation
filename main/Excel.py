@@ -169,15 +169,20 @@ def browse_file():
 def add_title_and_links():
     title = title_entry.get()
     links = links_text.get("1.0", tk.END).strip().splitlines()
+    cell_positions = cell_positions_text.get("1.0", tk.END).strip().splitlines()
 
-    if not title or not links:
-        messagebox.showerror("Error", "Please provide a title and at least one link.")
+    if not title or not links or not cell_positions:
+        messagebox.showerror("Error", "Please provide a title, at least one link, and corresponding cell positions.")
         return
 
-    titles_and_links[title] = links
+    if len(links) != len(cell_positions):
+        messagebox.showerror("Error", "The number of links and cell positions must match.")
+        return
+
+    titles_and_links[title] = list(zip(links, cell_positions))
     save_titles_and_links(titles_and_links)
     title_combobox['values'] = list(titles_and_links.keys())
-    messagebox.showinfo("Success", "Title and links added successfully.")
+    messagebox.showinfo("Success", "Title, links, and cell positions added successfully.")
 
 def create_output_folder():
     output_folder = os.path.join(os.getcwd(), "output")
@@ -195,7 +200,9 @@ def run_process():
         messagebox.showerror("Error", "No title selected. Please select a title.")
         return
 
-    links = titles_and_links[selected_title]
+    links_and_positions = titles_and_links[selected_title]
+    links = [item[0] for item in links_and_positions]
+    cell_positions = [item[1] for item in links_and_positions]
 
     sheet_name = 'Dashboard'
     new_sheet_name = 'Dashboard Copy'
@@ -211,54 +218,75 @@ def run_process():
         crop_image(screenshot_path, cropped_screenshot_path, crop_box)
         screenshot_paths.append(cropped_screenshot_path)
 
-    cell_positions = ['B4', 'C4', 'B6', 'C6']
-
     add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshot_paths, cell_positions)
     messagebox.showinfo("Success", "Process completed and screenshots added to the Excel file.")
 
 root = tk.Tk()
 root.title("Excel Automation Tool")
-root.geometry("600x400")
+root.geometry("400x700")  # Changed the screen size to 800x600
+
+# Create a canvas and a scrollbar
+canvas = tk.Canvas(root)
+scrollbar = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
+scrollable_frame = ttk.Frame(canvas)
+
+scrollable_frame.bind(
+    "<Configure>",
+    lambda e: canvas.configure(
+        scrollregion=canvas.bbox("all")
+    )
+)
+
+canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+canvas.configure(yscrollcommand=scrollbar.set)
+
+scrollbar.pack(side="right", fill="y")
+canvas.pack(side="left", fill="both", expand=True)
 
 folder_path = None
 
 # Load existing titles and links
 titles_and_links = load_titles_and_links()
 
-folder_label = tk.Label(root, text="No folder selected", wraplength=400)
+folder_label = tk.Label(scrollable_frame, text="No folder selected", wraplength=400)
 folder_label.pack(pady=10)
 
-browse_button = tk.Button(root, text="Browse File", command=browse_file)
+browse_button = tk.Button(scrollable_frame, text="Browse File", command=browse_file)
 browse_button.pack(pady=5)
 
-title_label = tk.Label(root, text="Enter Title:")
+title_label = tk.Label(scrollable_frame, text="Enter Title:")
 title_label.pack()
-title_entry = tk.Entry(root, width=50)
+title_entry = tk.Entry(scrollable_frame, width=50)
 title_entry.pack(pady=5)
 
-links_label = tk.Label(root, text="Enter Links (one per line):")
+links_label = tk.Label(scrollable_frame, text="Enter Links (one per line):")
 links_label.pack()
-links_text = tk.Text(root, height=5, width=50)
+links_text = tk.Text(scrollable_frame, height=5, width=50)
 links_text.pack(pady=5)
 
-add_button = tk.Button(root, text="Add Title and Links", command=add_title_and_links)
+cell_positions_label = tk.Label(scrollable_frame, text="Enter Cell Positions (one per line):")
+cell_positions_label.pack()
+cell_positions_text = tk.Text(scrollable_frame, height=5, width=50)
+cell_positions_text.pack(pady=5)
+
+add_button = tk.Button(scrollable_frame, text="Add Title and Links", command=add_title_and_links)
 add_button.pack(pady=5)
 
-delete_button = tk.Button(root, text="Delete Title and Links", command=delete_title_and_links)
+delete_button = tk.Button(scrollable_frame, text="Delete Title and Links", command=delete_title_and_links)
 delete_button.pack(pady=5)
 
-edit_button = tk.Button(root, text="Edit Title and Links", command=edit_title_and_links)
+edit_button = tk.Button(scrollable_frame, text="Edit Title and Links", command=edit_title_and_links)
 edit_button.pack(pady=5)
 
-view_button = tk.Button(root, text="View Title and Links", command=view_titles_and_links)
+view_button = tk.Button(scrollable_frame, text="View Title and Links", command=view_titles_and_links)
 view_button.pack(pady=5)
 
-title_combobox_label = tk.Label(root, text="Select Title:")
+title_combobox_label = tk.Label(scrollable_frame, text="Select Title:")
 title_combobox_label.pack()
-title_combobox = ttk.Combobox(root, values=list(titles_and_links.keys()), state="readonly", width=47)
+title_combobox = ttk.Combobox(scrollable_frame, values=list(titles_and_links.keys()), state="readonly", width=47)
 title_combobox.pack(pady=5)
 
-run_button = tk.Button(root, text="Run", command=run_process)
+run_button = tk.Button(scrollable_frame, text="Run", command=run_process)
 run_button.pack(pady=10)
 
 root.mainloop()
