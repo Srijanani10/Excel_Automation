@@ -10,39 +10,59 @@ from PIL import Image as PILImage
 import os
 import time
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
+import json
 
-# Function to take a screenshot of a website after logging in
+# Path to store titles and links
+data_file = "titles_and_links.json"
+
+# Load titles and links from the JSON file
+def load_titles_and_links():
+    if os.path.exists(data_file):
+        with open(data_file, "r") as file:
+            return json.load(file)
+    return {}
+
+# Save titles and links to the JSON file
+def save_titles_and_links(data):
+    with open(data_file, "w") as file:
+        json.dump(data, file, indent=4)
+
 def take_screenshot(url, output_path):
     options = webdriver.EdgeOptions()
-    options.add_argument("--no-sandbox")
     options.add_argument("--disable-extensions")
-    options.add_argument("--disable-gpu")
     options.add_argument("--user-data-dir=C:/temp/edge_profile")
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edg/91.0.864.67"
+    )
+
     driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
 
-    driver.get(url)
-
     try:
-        WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        driver.get(url)
+        print("Please log in manually in the browser window that has opened.")
+        while True:
+            try:
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+                break
+            except Exception:
+                print("Waiting for login...")
+
         time.sleep(5)
         driver.save_screenshot(output_path)
-        print(f"Screenshot saved to {output_path}")
-
     except Exception as e:
-        print(f"Error occurred: {e}")
-
+        print(f"Error during screenshot capture: {e}")
     finally:
         driver.quit()
 
-# Function to crop the image
 def crop_image(input_path, output_path, crop_box):
+    if not os.path.exists(input_path):
+        print(f"File not found: {input_path}")
+        return
+
     with PILImage.open(input_path) as img:
         cropped_img = img.crop(crop_box)
         cropped_img.save(output_path)
-        print(f"Cropped image saved to {output_path}")
 
 # Function to create a copy of a sheet and add screenshots with custom dimensions
 def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots, cell_positions):
@@ -77,46 +97,58 @@ def add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshots,
             print(f"Screenshot file not found: {screenshot}")
 
     wb.save(file_path)
+    
+def browse_file():
+    global file_path
+    file_path = filedialog.askopenfilename(title="Select Excel or CSV File", filetypes=[("Excel files", "*.xlsx"), ("CSV files", "*.csv")])
+    if file_path:
+        folder_label.config(text=f"Selected File: {file_path}")
+        messagebox.showinfo("File Selected", f"Detected file: {os.path.basename(file_path)}")
+    else:
+        messagebox.showerror("Error", "No file selected. Please select an Excel or CSV file.")
 
-# GUI Functions
-def browse_folder():
-    global folder_path
-    folder_path = filedialog.askdirectory(title="Select Folder")
-    if folder_path:
-        folder_label.config(text=f"Selected Folder: {folder_path}")
+def add_title_and_links():
+    title = title_entry.get()
+    links = links_text.get("1.0", tk.END).strip().splitlines()
+
+    if not title or not links:
+        messagebox.showerror("Error", "Please provide a title and at least one link.")
+        return
+
+    titles_and_links[title] = links
+    save_titles_and_links(titles_and_links)
+    title_combobox['values'] = list(titles_and_links.keys())
+    messagebox.showinfo("Success", "Title and links added successfully.")
+
+def create_output_folder():
+    output_folder = os.path.join(os.getcwd(), "output")
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    return output_folder
 
 def run_process():
-    if not folder_path:
-        messagebox.showerror("Error", "No folder selected. Please select a folder.")
+    if not file_path:
+        messagebox.showerror("Error", "No file selected. Please select a file.")
         return
 
-    # Find Excel file in the selected folder
-    excel_files = [f for f in os.listdir(folder_path) if f.endswith('.xlsx')]
-    if not excel_files:
-        messagebox.showerror("Error", "No Excel file found in the selected folder.")
-        return
-    elif len(excel_files) > 1:
-        messagebox.showerror("Error", "Multiple Excel files found. Please ensure only one Excel file exists in the folder.")
+    selected_title = title_combobox.get()
+    if not selected_title:
+        messagebox.showerror("Error", "No title selected. Please select a title.")
         return
 
-    file_path = os.path.join(folder_path, excel_files[0])
+    links = titles_and_links[selected_title]
+
     sheet_name = 'Dashboard'
     new_sheet_name = 'Dashboard Copy'
 
-    urls = [
-        'https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/status/customview/171358000000082007/donut',
-        'https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/owner/customview/171358000000082007/bar',
-        'https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/basicreports/status/customview/171358000001439105/donut',
-        'https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/advancedreports/dynamicreport/owners/status/customview/171358000001439095/stacked'
-    ]
-
+    output_folder = create_output_folder()
     screenshot_paths = []
-    for i, url in enumerate(urls):
-        screenshot_path = os.path.join(folder_path, f"screenshot_{i + 1}.png")
+    for i, url in enumerate(links):
+        screenshot_path = os.path.join(output_folder, f"screenshot_{i + 1}.png")
         take_screenshot(url, screenshot_path)
 
         crop_box = (380, 237, 1863, 900)
-        cropped_screenshot_path = os.path.join(folder_path, f"cropped_screenshot_{i + 1}.png")
+        cropped_screenshot_path = os.path.join(output_folder, f"cropped_screenshot_{i + 1}.png")
         crop_image(screenshot_path, cropped_screenshot_path, crop_box)
         screenshot_paths.append(cropped_screenshot_path)
 
@@ -125,22 +157,40 @@ def run_process():
     add_screenshots_to_excel(file_path, sheet_name, new_sheet_name, screenshot_paths, cell_positions)
     messagebox.showinfo("Success", "Process completed and screenshots added to the Excel file.")
 
-# Initialize GUI
 root = tk.Tk()
 root.title("Excel Automation Tool")
-root.geometry("400x200")
+root.geometry("600x400")
 
 folder_path = None
 
-# GUI Elements
-folder_label = tk.Label(root, text="No folder selected", wraplength=300)
+# Load existing titles and links
+titles_and_links = load_titles_and_links()
+
+folder_label = tk.Label(root, text="No folder selected", wraplength=400)
 folder_label.pack(pady=10)
 
-browse_button = tk.Button(root, text="Browse Folder", command=browse_folder)
+browse_button = tk.Button(root, text="Browse File", command=browse_file)
 browse_button.pack(pady=5)
 
-run_button = tk.Button(root, text="Run", command=run_process)
-run_button.pack(pady=5)
+title_label = tk.Label(root, text="Enter Title:")
+title_label.pack()
+title_entry = tk.Entry(root, width=50)
+title_entry.pack(pady=5)
 
-# Run the GUI loop
+links_label = tk.Label(root, text="Enter Links (one per line):")
+links_label.pack()
+links_text = tk.Text(root, height=5, width=50)
+links_text.pack(pady=5)
+
+add_button = tk.Button(root, text="Add Title and Links", command=add_title_and_links)
+add_button.pack(pady=5)
+
+title_combobox_label = tk.Label(root, text="Select Title:")
+title_combobox_label.pack()
+title_combobox = ttk.Combobox(root, values=list(titles_and_links.keys()), state="readonly", width=47)
+title_combobox.pack(pady=5)
+
+run_button = tk.Button(root, text="Run", command=run_process)
+run_button.pack(pady=10)
+
 root.mainloop()
