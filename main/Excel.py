@@ -43,6 +43,17 @@ def delete_title_and_links():
     else:
         messagebox.showerror("Error", "Selected title not found.")
 
+# View titles and links
+def view_titles_and_links():
+    selected_title = title_combobox.get()
+    if not selected_title:
+        messagebox.showerror("Error", "No title selected. Please select a title.")
+        return
+
+    links = titles_and_links.get(selected_title, [])
+    links_str = "\n".join(links)
+    messagebox.showinfo("View Links", f"Title: {selected_title}\nLinks:\n{links_str}")
+
 def take_screenshot(url, output_path):
     options = webdriver.EdgeOptions()
     options.add_argument("--disable-extensions")
@@ -202,6 +213,9 @@ add_button.pack(pady=5)
 
 delete_button = tk.Button(root, text="Delete Title and Links", command=delete_title_and_links)
 delete_button.pack(pady=5)
+
+view_button = tk.Button(root, text="View Title and Links", command=view_titles_and_links)
+view_button.pack(pady=5)
 
 title_combobox_label = tk.Label(root, text="Select Title:")
 title_combobox_label.pack()
