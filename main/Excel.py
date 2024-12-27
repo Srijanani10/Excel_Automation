@@ -204,8 +204,13 @@ def run_process():
     links = [item[0] for item in links_and_positions]
     cell_positions = [item[1] for item in links_and_positions]
 
-    sheet_name = 'Dashboard'
-    new_sheet_name = 'Dashboard Copy'
+    wb = openpyxl.load_workbook(file_path)
+    sheet_names = wb.sheetnames
+    if len(sheet_names) > 1:
+        sheet_name = sheet_names[1]
+    else:
+        sheet_name = sheet_names[0]
+    new_sheet_name = f"{sheet_name} Copy"
 
     output_folder = create_output_folder()
     screenshot_paths = []
@@ -248,6 +253,7 @@ folder_path = None
 # Load existing titles and links
 titles_and_links = load_titles_and_links()
 
+title_label = tk.Label(scrollable_frame, text="Make sure the selected folder is not opened")
 folder_label = tk.Label(scrollable_frame, text="No folder selected", wraplength=400)
 folder_label.pack(pady=10)
 
