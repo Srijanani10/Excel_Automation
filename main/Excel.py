@@ -28,6 +28,21 @@ def save_titles_and_links(data):
     with open(data_file, "w") as file:
         json.dump(data, file, indent=4)
 
+# Delete a title and its links from the JSON file
+def delete_title_and_links():
+    selected_title = title_combobox.get()
+    if not selected_title:
+        messagebox.showerror("Error", "No title selected. Please select a title.")
+        return
+
+    if selected_title in titles_and_links:
+        del titles_and_links[selected_title]
+        save_titles_and_links(titles_and_links)
+        title_combobox['values'] = list(titles_and_links.keys())
+        messagebox.showinfo("Success", "Title and links deleted successfully.")
+    else:
+        messagebox.showerror("Error", "Selected title not found.")
+
 def take_screenshot(url, output_path):
     options = webdriver.EdgeOptions()
     options.add_argument("--disable-extensions")
@@ -184,6 +199,9 @@ links_text.pack(pady=5)
 
 add_button = tk.Button(root, text="Add Title and Links", command=add_title_and_links)
 add_button.pack(pady=5)
+
+delete_button = tk.Button(root, text="Delete Title and Links", command=delete_title_and_links)
+delete_button.pack(pady=5)
 
 title_combobox_label = tk.Label(root, text="Select Title:")
 title_combobox_label.pack()
