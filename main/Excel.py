@@ -230,7 +230,7 @@ def run_process():
         screenshot_path = os.path.join(output_folder, f"screenshot_{i + 1}.png")
         take_screenshot(url, screenshot_path)
 
-        crop_box = (380, 237, 1863, 900)
+        crop_box = (380, 237, 1863, 840)
         cropped_screenshot_path = os.path.join(output_folder, f"cropped_screenshot_{i + 1}.png")
         crop_image(screenshot_path, cropped_screenshot_path, crop_box)
         screenshot_paths.append(cropped_screenshot_path)
