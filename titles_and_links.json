@@ -1,20 +1,23 @@
 {
-    "Lx70": [
-        [
-            "https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/status/customview/171358000000082007/donut",
-            "B4"
-        ],
-        [
-            "https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/owner/customview/171358000000082007/bar",
-            "C4"
-        ],
-        [
-            "https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/basicreports/status/customview/171358000001439105/donut",
-            "B6"
-        ],
-        [
-            "https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/advancedreports/dynamicreport/owners/status/customview/171358000001439095/stacked",
-            "C6"
+    "LX70": {
+        "file_path": "C:/Users/srija/Downloads/LX_70_Project (2) 1/LX_70_Project/LX_70_Project_Health_Card_Template1.xlsx",
+        "links": [
+            [
+                "https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/status/customview/171358000000082007/donut",
+                "B4"
+            ],
+            [
+                "https://projects.zoho.in/portal/lectrixtech#taskreports/171358000000548009/basicreports/owner/customview/171358000000082007/bar",
+                "C4"
+            ],
+            [
+                "https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/basicreports/status/customview/171358000001439105/donut",
+                "B6"
+            ],
+            [
+                "https://projects.zoho.in/portal/lectrixtech#bugreports/171358000000548009/advancedreports/dynamicreport/owners/status/customview/171358000001439095/stacked",
+                "C6"
+            ]
         ]
-    ]
+    }
 }

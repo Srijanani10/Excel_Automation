@@ -54,19 +54,24 @@ def edit_title_and_links():
     title_entry.delete(0, tk.END)
     title_entry.insert(0, selected_title)
     links_text.delete("1.0", tk.END)
-    links_text.insert("1.0", "\n".join(titles_and_links[selected_title]))
+    links_text.insert("1.0", "\n".join([link for link, _ in titles_and_links[selected_title]['links']]))
 
     def save_edited_title_and_links():
         new_title = title_entry.get()
         new_links = links_text.get("1.0", tk.END).strip().splitlines()
+        new_cell_positions = cell_positions_text.get("1.0", tk.END).strip().splitlines()
 
-        if not new_title or not new_links:
-            messagebox.showerror("Error", "Please provide a new title and at least one link.")
+        if not new_title or not new_links or not new_cell_positions:
+            messagebox.showerror("Error", "Please provide a new title, at least one link, and corresponding cell positions.")
+            return
+
+        if len(new_links) != len(new_cell_positions):
+            messagebox.showerror("Error", "The number of links and cell positions must match.")
             return
 
         if selected_title in titles_and_links:
             del titles_and_links[selected_title]
-            titles_and_links[new_title] = new_links
+            titles_and_links[new_title] = {'file_path': file_path, 'links': list(zip(new_links, new_cell_positions))}
             save_titles_and_links(titles_and_links)
             title_combobox['values'] = list(titles_and_links.keys())
             messagebox.showinfo("Success", "Title and links edited successfully.")
@@ -83,9 +88,11 @@ def view_titles_and_links():
         messagebox.showerror("Error", "No title selected. Please select a title.")
         return
 
-    links = titles_and_links.get(selected_title, [])
-    links_str = "\n".join(links)
-    messagebox.showinfo("View Links", f"Title: {selected_title}\nLinks:\n{links_str}")
+    title_info = titles_and_links.get(selected_title, {})
+    file_path = title_info.get('file_path', 'N/A')
+    links = title_info.get('links', [])
+    links_str = "\n".join([f"{link} (Cell: {cell})" for link, cell in links])
+    messagebox.showinfo("View Links", f"Title: {selected_title}\nFile Path: {file_path}\nLinks:\n{links_str}")
 
 def take_screenshot(url, output_path):
     options = webdriver.EdgeOptions()
@@ -167,6 +174,11 @@ def browse_file():
         messagebox.showerror("Error", "No file selected. Please select an Excel or CSV file.")
 
 def add_title_and_links():
+    global file_path
+    if not file_path:
+        messagebox.showerror("Error", "No file selected. Please select a file.")
+        return
+
     title = title_entry.get()
     links = links_text.get("1.0", tk.END).strip().splitlines()
     cell_positions = cell_positions_text.get("1.0", tk.END).strip().splitlines()
@@ -179,10 +191,12 @@ def add_title_and_links():
         messagebox.showerror("Error", "The number of links and cell positions must match.")
         return
 
-    titles_and_links[title] = list(zip(links, cell_positions))
+    # Save the title, file path, links, and cell positions
+    titles_and_links[title] = {'file_path': file_path, 'links': list(zip(links, cell_positions))}
     save_titles_and_links(titles_and_links)
     title_combobox['values'] = list(titles_and_links.keys())
-    messagebox.showinfo("Success", "Title, links, and cell positions added successfully.")
+    messagebox.showinfo("Success", "Title, file path, links, and cell positions added successfully.")
+
 
 def create_output_folder():
     output_folder = os.path.join(os.getcwd(), "output")
@@ -190,19 +204,17 @@ def create_output_folder():
         os.makedirs(output_folder)
     return output_folder
 
+# Define the run_process function here
 def run_process():
-    if not file_path:
-        messagebox.showerror("Error", "No file selected. Please select a file.")
-        return
-
     selected_title = title_combobox.get()
     if not selected_title:
         messagebox.showerror("Error", "No title selected. Please select a title.")
         return
 
-    links_and_positions = titles_and_links[selected_title]
+    links_and_positions = titles_and_links[selected_title]['links']
     links = [item[0] for item in links_and_positions]
     cell_positions = [item[1] for item in links_and_positions]
+    file_path = titles_and_links[selected_title]['file_path']
 
     wb = openpyxl.load_workbook(file_path)
     sheet_names = wb.sheetnames
